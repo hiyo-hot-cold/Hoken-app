@@ -39,7 +39,6 @@ export default function Home() {
     );
   }
 
-  // 中略（ログイン判定のあとの return 部分をこう書き換えて！）
 
   return (
     <div className="min-h-screen bg-slate-50 p-4">
