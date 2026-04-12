@@ -4,15 +4,16 @@ import { supabase } from "../utils/supabase";
 import StatsComponent from "./StatsComponent";
 
 const subjectData = [
-    { name: "生命保険総論", icon: "📚" },
-    { name: "生命保険計理", icon: "📊" },
-    { name: "危険選択", icon: "⚖️" },
-    { name: "約款と法律", icon: "📜" },
-    { name: "生命保険会計", icon: "💰" },
-    { name: "生命保険と営業", icon: "🤝" },
-    { name: "生命保険と税法", icon: "💴" },
-    { name: "資産運用", icon: "📈" }
+    { name: "生命保険総論", image: "/icons/1_souron.png" },
+    { name: "生命保険計理", image: "/icons/2_keiri.png" },
+    { name: "危険選択", image: "/icons/3_kikensentaku.png" },
+    { name: "約款と法律", image: "/icons/4_yakkantohouritsu.png" },
+    { name: "生命保険会計", image: "/icons/5_kaikei.png" },
+    { name: "生命保険と営業", image: "/icons/6_eigyou.png" },
+    { name: "生命保険と税法", image: "/icons/7_zeihou.png" },
+    { name: "資産運用", image: "/icons/8_sisan-unnyou.png" }
 ];
+
 
 // ★メアドを伏せ字（use***@domain.com）にする関数
 const maskEmail = (email: string) => {
@@ -131,20 +132,30 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
                                     key={sub.name}
                                     onClick={() => handleSubjectSelect(sub.name)}
                                     disabled={qCount === 0}
-                                    className={`group w-full text-left p-6 rounded-3xl border border-white bg-white backdrop-blur-lg shadow-2xl shadow-slate-500/10 hover:border-blue-200 transition-all active:scale-[0.98] flex items-center gap-6 ${qCount === 0 ? 'opacity-60' : ''}`}
+                                    className={`group w-full text-left p-4 rounded-[28px] border border-white bg-white backdrop-blur-lg shadow-2xl shadow-slate-500/10 hover:border-blue-200 transition-all active:scale-[0.98] flex items-center gap-5 ${qCount === 0 ? 'opacity-60' : ''}`}
                                 >
-                                    <span className="text-4xl w-16 h-16 flex items-center justify-center bg-blue-50/70 rounded-2xl group-hover:scale-110 transition-transform duration-300">{sub.icon}</span>
+                                    {/* アイコン画像エリア */}
+                                    <div className="w-16 h-16 flex-shrink-0 bg-slate-50 rounded-2xl overflow-hidden group-hover:scale-105 transition-transform duration-300 border border-slate-100">
+                                        <img
+                                            src={sub.image}
+                                            alt={sub.name}
+                                            className="w-full h-full object-cover"
+                                            // 画像読み込みエラー時のための回避策（任意）
+                                            onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/64?text=📦"; }}
+                                        />
+                                    </div>
 
                                     <div className="flex-1">
-                                        <span className="font-extrabold text-slate-950 block text-xl mb-1.5 group-hover:text-blue-700 transition-colors">{sub.name}</span>
-                                        <span className={`text-xs font-black px-3 py-1 rounded-full inline-block ${qCount > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}>
+                                        <span className="font-extrabold text-slate-950 block text-lg mb-1 group-hover:text-blue-700 transition-colors">{sub.name}</span>
+                                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-full inline-block ${qCount > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}>
                                             {qCount}問 収録
                                         </span>
                                     </div>
-                                    <span className="text-4xl text-slate-200 group-hover:text-blue-500 transition-colors group-hover:translate-x-1.5 transition-transform">→</span>
+                                    <span className="text-2xl text-slate-200 group-hover:text-blue-500 transition-colors group-hover:translate-x-1 transition-transform">→</span>
                                 </button>
                             );
                         })}
+
                     </div>
                 </div>
             );
