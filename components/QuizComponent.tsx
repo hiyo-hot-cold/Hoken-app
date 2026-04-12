@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { supabase } from "../utils/supabase";
+import { supabase } from "@/utils/supabase";
 import StatsComponent from "./StatsComponent";
 
 const subjectData = [
@@ -14,19 +14,12 @@ const subjectData = [
     { name: "資産運用", image: "/icons/8_sisan-unnyou.png" }
 ];
 
-
-// ★メアドを伏せ字（use***@domain.com）にする関数
 const maskEmail = (email: string) => {
     if (!email || !email.includes('@')) return email;
     const [localPart, domainPart] = email.split('@');
-    if (localPart.length <= 3) {
-        return localPart[0] + '***@' + domainPart;
-    } else {
-        return localPart.substring(0, 3) + '***@' + domainPart;
-    }
+    return localPart.substring(0, 3) + '***@' + domainPart;
 };
 
-// ★受け取るデータに userEmail を追加！
 export default function QuizComponent({ userId, userEmail }: { userId: string, userEmail: string }) {
     const [questions, setQuestions] = useState<any[]>([]);
     const [activeQuestions, setActiveQuestions] = useState<any[]>([]);
@@ -37,17 +30,35 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
     const [showResult, setShowResult] = useState(false);
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [activeTab, setActiveTab] = useState<'dashboard' | 'quiz'>('quiz');
+    const [lastSubject, setLastSubject] = useState<string | null>(null);
 
     useEffect(() => {
-        async function fetchQuestions() {
+        async function fetchData() {
             setLoading(true);
-            const { data, error } = await supabase.from('questions').select('*');
-            if (error) console.error("データ取得エラー:", error);
-            else setQuestions(data || []);
+            const { data: qData } = await supabase.from('questions').select('*');
+            setQuestions(qData || []);
+
+            const { data: lastData } = await supabase
+                .from('user_answers')
+                .select(`questions(subject)`)
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle(); // singleだとデータなしでエラーになるのでmaybeSingle
+
+            if (lastData && (lastData as any).questions) {
+                setLastSubject((lastData as any).questions.subject);
+            }
             setLoading(false);
         }
-        fetchQuestions();
-    }, []);
+        fetchData();
+    }, [userId]);
+
+    const sortedSubjects = [...subjectData].sort((a, b) => {
+        if (a.name === lastSubject) return -1;
+        if (b.name === lastSubject) return 1;
+        return 0;
+    });
 
     const handleSubjectSelect = (sub: string) => {
         const filtered = questions.filter(q => q.subject === sub);
@@ -70,8 +81,7 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
     };
 
     const handleBackToMenu = () => {
-        const confirmBack = window.confirm("本当に中断して科目選択に戻る？\n（今の正解数や進み具合はリセットされちゃうよ！）");
-        if (confirmBack) resetQuizState();
+        if (window.confirm("中断して戻る？")) resetQuizState();
     };
 
     const handleAnswer = async (selectedIndex: number) => {
@@ -80,12 +90,11 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
         const isCorrect = selectedIndex === currentQuestion.answer;
         setSelectedAnswer(selectedIndex);
         if (isCorrect) setScore(score + 1);
-        const { error } = await supabase.from('user_answers').insert({
-            user_id: userId, // 保存にはちゃんとUUIDを使うよ！
+        await supabase.from('user_answers').insert({
+            user_id: userId,
             question_id: currentQuestion.id,
             is_correct: isCorrect
         });
-        if (error) console.error("保存エラー:", error.message);
     };
 
     const handleNext = () => {
@@ -98,19 +107,12 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
         }
     };
 
-    if (loading) {
-        return (
-            <div className="max-w-md mx-auto text-center p-10 mt-28">
-                <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="font-bold text-slate-600">読み込み中...⌛</p>
-            </div>
-        );
-    }
+    if (loading) return <div className="text-center p-20 mt-20 font-bold text-slate-400">Loading...</div>;
 
     const renderContent = () => {
         if (activeTab === 'dashboard') {
             return (
-                <div className="max-w-md mx-auto px-4 pt-8">
+                <div className="max-w-md mx-auto px-4 pt-6 select-none">
                     <StatsComponent userId={userId} />
                 </div>
             );
@@ -118,72 +120,45 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
 
         if (!selectedSubject) {
             return (
-                <div className="max-w-md mx-auto px-4 pt-8 pb-10">
-                    <div className="mb-10 flex items-center justify-between px-1">
-                        <h2 className="text-3xl font-black text-slate-950 tracking-tighter">科目を選択してね</h2>
-                        <span className="text-sm font-bold text-slate-400 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-xl shadow-slate-500/5">{subjectData.length} 科目</span>
+                <div className="max-w-md mx-auto px-4 pt-6 pb-10">
+                    <div className="mb-6 flex items-end justify-between px-1">
+                        <div>
+                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] block mb-1">Select Subject</span>
+                            <h2 className="text-xl font-extrabold text-slate-900">学習科目</h2>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 border border-slate-200 px-2 py-0.5 rounded-md italic">{subjectData.length} Items</span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-5">
-                        {subjectData.map((sub) => {
+                    <div className="grid grid-cols-1 gap-3">
+                        {sortedSubjects.map((sub) => {
                             const qCount = questions.filter(q => q.subject === sub.name).length;
+                            const isRecent = sub.name === lastSubject;
                             return (
                                 <button
                                     key={sub.name}
                                     onClick={() => handleSubjectSelect(sub.name)}
                                     disabled={qCount === 0}
-                                    className={`group w-full text-left p-4 rounded-[28px] border border-white bg-white backdrop-blur-lg shadow-2xl shadow-slate-500/10 hover:border-blue-200 transition-all active:scale-[0.98] flex items-center gap-5 ${qCount === 0 ? 'opacity-60' : ''}`}
+                                    className={`group w-full text-left p-4 rounded-2xl border transition-all active:scale-[0.98] flex items-center gap-4 ${isRecent
+                                        ? 'bg-white border-blue-400 shadow-blue-100 shadow-xl'
+                                        : 'bg-white border-white shadow-lg shadow-slate-200/50 hover:border-blue-100'
+                                        } ${qCount === 0 ? 'opacity-50' : ''}`}
                                 >
-                                    {/* アイコン画像エリア */}
-                                    <div className="w-16 h-16 flex-shrink-0 bg-slate-50 rounded-2xl overflow-hidden group-hover:scale-105 transition-transform duration-300 border border-slate-100">
-                                        <img
-                                            src={sub.image}
-                                            alt={sub.name}
-                                            className="w-full h-full object-cover"
-                                            // 画像読み込みエラー時のための回避策（任意）
-                                            onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/64?text=📦"; }}
-                                        />
+                                    <div className="w-14 h-14 flex-shrink-0 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 select-none pointer-events-none">
+                                        <img src={sub.image} alt="" className="w-full h-full object-cover" onContextMenu={(e) => e.preventDefault()} />
                                     </div>
-
                                     <div className="flex-1">
-                                        <span className="font-extrabold text-slate-950 block text-lg mb-1 group-hover:text-blue-700 transition-colors">{sub.name}</span>
-                                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-full inline-block ${qCount > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}>
-                                            {qCount}問 収録
-                                        </span>
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <span className="font-bold text-slate-900 block text-base group-hover:text-blue-600 transition-colors">{sub.name}</span>
+                                            {isRecent && (
+                                                <span className="text-[8px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded-sm animate-pulse">RECENT</span>
+                                            )}
+                                        </div>
+                                        <span className="text-[10px] font-bold text-slate-400">{qCount}問収録</span>
                                     </div>
-                                    <span className="text-2xl text-slate-200 group-hover:text-blue-500 transition-colors group-hover:translate-x-1 transition-transform">→</span>
+                                    <span className={`transition-all text-xl ${isRecent ? 'text-blue-500' : 'text-slate-200 group-hover:text-blue-500'}`}>→</span>
                                 </button>
                             );
                         })}
-
-                    </div>
-                </div>
-            );
-        }
-
-        if (activeQuestions.length === 0) {
-            return (
-                <div className="max-w-md mx-auto text-center p-12 bg-white rounded-[32px] shadow-2xl border border-white mx-2 mt-12">
-                    <span className="text-7xl block mb-6">🚧</span>
-                    <p className="mb-8 font-extrabold text-slate-800 text-lg">「{selectedSubject}」の問題はまだ準備中だよ！</p>
-                    <button onClick={resetQuizState} className="bg-slate-900 text-white px-8 py-3.5 rounded-full font-black shadow-xl active:scale-95 transition-all hover:bg-slate-800">科目選択に戻る</button>
-                </div>
-            );
-        }
-
-        if (showResult) {
-            return (
-                <div className="text-center p-12 bg-white rounded-[40px] shadow-2xl border-2 border-white mx-2 mt-12 max-w-md mx-auto">
-                    <span className="text-7xl block mb-6">🏆</span>
-                    <h2 className="text-xl font-bold text-slate-600 mb-1">{selectedSubject}</h2>
-                    <h3 className="text-3xl font-black text-blue-600 mb-10">お疲れ様でした！✨</h3>
-                    <div className="bg-slate-50 p-6 rounded-2xl mb-10">
-                        <p className="text-sm text-slate-400 mb-1">正解数</p>
-                        <p className="text-lg text-slate-600"><span className="text-6xl font-black text-slate-950">{score}</span> / {activeQuestions.length}</p>
-                    </div>
-                    <div className="space-y-4">
-                        <button onClick={() => handleSubjectSelect(selectedSubject)} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-xl active:scale-95 transition-all text-lg hover:bg-blue-700">違う順番で再挑戦</button>
-                        <button onClick={resetQuizState} className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black border border-slate-200 active:scale-95 transition-all hover:bg-slate-50">他の科目を解く</button>
                     </div>
                 </div>
             );
@@ -192,47 +167,40 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
         const currentQuestion = activeQuestions[current];
         const isAnswered = selectedAnswer !== null;
 
+        if (showResult) return (
+            <div className="text-center p-10 max-w-md mx-auto mt-10 bg-white rounded-[40px] shadow-2xl border-2 border-white mx-4">
+                <span className="text-6xl block mb-4">🎉</span>
+                <p className="text-6xl font-black text-slate-950 mb-2">{score}<span className="text-2xl text-slate-400">/{activeQuestions.length}</span></p>
+                <button onClick={resetQuizState} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-xl mt-6">戻る</button>
+            </div>
+        );
+
         return (
             <div className="max-w-md mx-auto px-4 pt-6">
-                <div className="flex justify-between items-center mb-6 px-1">
-                    <button onClick={handleBackToMenu} className="bg-white/60 backdrop-blur-lg text-slate-600 px-5 py-2 rounded-full flex items-center text-xs font-bold shadow-lg shadow-slate-500/5 border border-white hover:border-blue-200 transition-all active:scale-95">
-                        <span className="mr-1.5 text-sm">←</span> 戻る
-                    </button>
-                    <span className="text-[11px] font-black text-blue-700 bg-blue-100 px-4 py-2 rounded-full uppercase tracking-wider">{selectedSubject}</span>
+                <div className="flex justify-between items-center mb-4 px-1">
+                    <button onClick={handleBackToMenu} className="bg-white text-slate-500 px-4 py-1.5 rounded-full text-[10px] font-black border border-slate-100 shadow-sm">← BACK</button>
+                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full uppercase tracking-wider">{selectedSubject}</span>
                 </div>
-
-                <div className="bg-white/90 backdrop-blur-lg p-7 sm:p-9 rounded-[32px] shadow-2xl shadow-slate-500/5 border border-white relative overflow-hidden">
-                    <div className="absolute top-0 left-0 h-1.5 bg-blue-600 transition-all duration-500" style={{ width: `${((current + 1) / activeQuestions.length) * 100}%` }}></div>
-                    <div className="text-right mb-5">
-                        <span className="text-sm font-black text-slate-400">{current + 1} <span className="text-[11px] text-slate-300">/ {activeQuestions.length}</span></span>
-                    </div>
-                    <h2 className="text-xl font-extrabold text-slate-950 mb-8 leading-relaxed tracking-tight">{currentQuestion.question}</h2>
-
-                    <div className="space-y-4">
+                <div className="bg-white p-7 rounded-[32px] shadow-2xl shadow-slate-200 border border-white relative overflow-hidden">
+                    <div className="absolute top-0 left-0 h-1 bg-blue-600 transition-all" style={{ width: `${((current + 1) / activeQuestions.length) * 100}%` }}></div>
+                    <h2 className="text-lg font-extrabold text-slate-950 mb-8 leading-tight">{currentQuestion.question}</h2>
+                    <div className="space-y-3">
                         {currentQuestion.options.map((opt: string, index: number) => {
-                            let buttonStyle = "border-slate-100 text-slate-800 bg-white hover:border-blue-300 shadow-lg shadow-slate-500/5";
+                            let style = "bg-slate-50 text-slate-800 border-slate-100 hover:border-blue-200";
                             if (isAnswered) {
-                                if (index === currentQuestion.answer) buttonStyle = "bg-green-600 border-green-600 text-white shadow-xl shadow-green-500/30";
-                                else if (index === selectedAnswer) buttonStyle = "bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20";
-                                else buttonStyle = "bg-white border-slate-50 text-slate-300 opacity-50";
+                                if (index === currentQuestion.answer) style = "bg-green-600 border-green-600 text-white shadow-lg";
+                                else if (index === selectedAnswer) style = "bg-red-500 border-red-500 text-white";
+                                else style = "bg-white text-slate-200 border-slate-50 opacity-50";
                             }
                             return (
-                                <button key={index} disabled={isAnswered} onClick={() => handleAnswer(index)} className={`w-full text-left p-5 rounded-2xl border-2 transition-all font-bold text-sm min-h-[70px] flex items-center justify-between active:scale-[0.98] ${buttonStyle}`}>
-                                    <span className="flex-1">{opt}</span>
-                                    {isAnswered && index === currentQuestion.answer && <span className="text-2xl ml-3">✅</span>}
-                                    {isAnswered && index === selectedAnswer && index !== currentQuestion.answer && <span className="text-2xl ml-3">❌</span>}
-                                </button>
+                                <button key={index} disabled={isAnswered} onClick={() => handleAnswer(index)} className={`w-full text-left p-4 rounded-xl border-2 transition-all font-bold text-sm min-h-[70px] active:scale-[0.98] ${style}`}>{opt}</button>
                             );
                         })}
                     </div>
-
                     {isAnswered && (
-                        <div className="mt-8 p-6 bg-slate-950 text-white rounded-2xl animate-in fade-in zoom-in duration-300 shadow-2xl">
-                            <div className="flex items-center mb-4"><span className="text-[11px] font-black bg-blue-600 px-3 py-1 rounded-full mr-2">解説</span></div>
-                            <p className="text-sm leading-relaxed text-slate-300 mb-6 font-medium">{currentQuestion.explanation || "解説はまだ登録されていないよ！"}</p>
-                            <button onClick={handleNext} className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-base active:scale-95 shadow-xl shadow-blue-500/30 transition-transform hover:translate-y-[-2px]">
-                                {current < activeQuestions.length - 1 ? "次の問題へ！" : "結果を見る"}
-                            </button>
+                        <div className="mt-6 p-5 bg-slate-900 text-white rounded-2xl animate-in fade-in zoom-in duration-300 overflow-hidden">
+                            <p className="text-xs leading-relaxed mb-6">{currentQuestion.explanation || "No explanation."}</p>
+                            <button onClick={handleNext} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-black text-sm shadow-lg active:scale-95">NEXT →</button>
                         </div>
                     )}
                 </div>
@@ -241,38 +209,35 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 relative pb-32">
-
-            {/* ★ここが完成版のトップバー！メアドは伏せ字、ボタンは1つ！ */}
-            <div className="bg-white border-b border-slate-100 shadow-xl shadow-slate-500/5 sticky top-0 z-40">
-                <div className="max-w-md mx-auto px-5 py-4 flex items-center justify-between gap-3">
-                    <div className="bg-slate-100/70 px-4 py-2 rounded-xl border border-slate-200/60 shadow-inner">
-                        <span className="text-[10px] font-bold text-slate-400 block mb-0.5 uppercase tracking-wide">Account</span>
-                        <span className="block text-sm font-extrabold text-slate-950 max-w-[200px] truncate">
-                            {/* ★本物のメアド(userEmail)を伏せ字にして表示！ */}
-                            {maskEmail(userEmail)}
-                        </span>
+        <div className="min-h-screen bg-slate-50 relative pb-24">
+            <div className="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40">
+                <div className="max-w-md mx-auto px-5 py-3 flex items-center justify-between">
+                    <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                        <span className="block text-[10px] font-extrabold text-slate-950">{maskEmail(userEmail)}</span>
                     </div>
-                    <button onClick={() => supabase.auth.signOut()} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold text-xs active:scale-95 transition-all hover:bg-slate-800 shadow-md">
-                        ログアウト
-                    </button>
+                    <button onClick={() => supabase.auth.signOut()} className="text-slate-400 font-bold text-[10px] hover:text-red-500 transition-colors uppercase tracking-widest">Logout</button>
                 </div>
             </div>
 
-            {/* メインエリア */}
             {renderContent()}
 
-            {/* 下部タブナビゲーション */}
-            <div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-100 pb-safe shadow-[0_-15px_40px_-10px_rgba(0,0,0,0.1)] z-50">
-                <div className="max-w-md mx-auto flex justify-around p-3 gap-1">
-                    <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center justify-center w-full pt-3 pb-2.5 rounded-2xl transition-all duration-300 gap-1.5 ${activeTab === 'dashboard' ? 'text-blue-700 bg-blue-100/70 shadow-inner' : 'text-slate-400 hover:text-slate-700'}`}>
-                        <span className={`text-2xl transition-transform duration-300 ${activeTab === 'dashboard' ? 'scale-110' : 'scale-100'}`}>📊</span>
-                        <span className="text-[11px] font-black tracking-tight">成績・分析</span>
+            <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-100 pb-safe z-50 overflow-hidden">
+                <div className="max-w-md mx-auto flex justify-around p-2 gap-2">
+                    <button
+                        onClick={() => setActiveTab('dashboard')}
+                        className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl transition-all duration-300 ${activeTab === 'dashboard' ? 'text-blue-700 bg-blue-50 shadow-inner font-black' : 'text-slate-400 font-bold'
+                            }`}
+                    >
+                        <img src="/icons/9_analysis.png" alt="" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'dashboard' ? 'scale-110' : 'scale-100'}`} />
+                        <span className="text-[10px] tracking-tight">ANALYSIS</span>
                     </button>
-
-                    <button onClick={() => setActiveTab('quiz')} className={`flex flex-col items-center justify-center w-full pt-3 pb-2.5 rounded-2xl transition-all duration-300 gap-1.5 ${activeTab === 'quiz' ? 'text-blue-700 bg-blue-100/70 shadow-inner' : 'text-slate-400 hover:text-slate-700'}`}>
-                        <span className={`text-2xl transition-transform duration-300 ${activeTab === 'quiz' ? 'scale-110' : 'scale-100'}`}>📝</span>
-                        <span className="text-[11px] font-black tracking-tight">問題を解く</span>
+                    <button
+                        onClick={() => setActiveTab('quiz')}
+                        className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl transition-all duration-300 ${activeTab === 'quiz' ? 'text-blue-700 bg-blue-50 shadow-inner font-black' : 'text-slate-400 font-bold'
+                            }`}
+                    >
+                        <img src="/icons/10_training.png" alt="" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'quiz' ? 'scale-110' : 'scale-100'}`} />
+                        <span className="text-[10px] tracking-tight">TRAINING</span>
                     </button>
                 </div>
             </div>
