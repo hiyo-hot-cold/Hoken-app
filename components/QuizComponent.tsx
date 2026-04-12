@@ -274,7 +274,7 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
 
             {renderContent()}
             {/* 画面の一番下に追加 */}
-            <div className="max-w-md mx-auto py-8 text-center border-t border-slate-100 mt-4 mb-24">
+            <div className="max-w-md mx-auto py-12 text-center border-t border-slate-100 mt-10">
                 <p className="text-[10px] font-bold text-slate-300 tracking-widest uppercase">
                     © 2026 Yoshiki KOHINATA. All Rights Reserved.
                 </p>
