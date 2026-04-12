@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../utils/supabase";
+import StatsComponent from "./StatsComponent";
 
 const subjects = [
     "生命保険総論", "生命保険計理", "危険選択", "約款と法律",
@@ -85,7 +86,7 @@ export default function QuizComponent({ userId }: { userId: string }) {
 
         // ここを書き換え！
         if (error) {
-            console.error("履歴の保存に失敗しちゃった…💦", error.message, error.details, error.hint);
+            console.error("履歴の保存に失敗しちゃった...💦", error.message, error.details, error.hint);
             alert(`保存エラー: ${error.message}`); // 画面にもポップアップで出してみる！
         }
 
@@ -116,6 +117,9 @@ export default function QuizComponent({ userId }: { userId: string }) {
     if (!selectedSubject) {
         return (
             <div className="max-w-md mx-auto px-2">
+                {/* ★統計コンポーネント（ダッシュボード） */}
+                <StatsComponent userId={userId} />
+
                 <div className="bg-white p-6 rounded-3xl shadow-xl border-b-4 border-blue-100">
                     <h2 className="text-xl font-black text-slate-800 mb-6 text-center">科目を選択してね！📝</h2>
                     <div className="grid grid-cols-1 gap-3">
@@ -144,6 +148,7 @@ export default function QuizComponent({ userId }: { userId: string }) {
     }
 
     // 2. 問題がない時の画面
+
     if (activeQuestions.length === 0) {
         return (
             <div className="max-w-md mx-auto text-center p-8 bg-white rounded-3xl shadow-lg border-4 border-blue-100 mx-2">
