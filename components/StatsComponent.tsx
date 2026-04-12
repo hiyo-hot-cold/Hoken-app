@@ -11,7 +11,6 @@ export default function StatsComponent({ userId }: { userId: string }) {
     useEffect(() => {
         async function fetchStats() {
             setLoading(true);
-            // user_answers と questions を結合して取得！
             const { data, error } = await supabase
                 .from('user_answers')
                 .select(`
@@ -21,7 +20,6 @@ export default function StatsComponent({ userId }: { userId: string }) {
                 `)
                 .eq('user_id', userId);
 
-            // ★エラーデバッグ用のコードを追加（昨日の「なんだこれー（image_10.png）」への対策！）
             if (error) {
                 console.error("統計取得エラー:", error.message, error.details, error.hint);
             } else if (data) {
@@ -45,7 +43,6 @@ export default function StatsComponent({ userId }: { userId: string }) {
 
         const formattedStats = Object.values(subjectMap).map((item: any) => ({
             subject: item.subject,
-            // 正答率を計算。データがない場合は0に
             accuracy: item.total > 0 ? Math.round((item.correct / item.total) * 100) : 0,
             count: item.total
         }));
@@ -67,7 +64,6 @@ export default function StatsComponent({ userId }: { userId: string }) {
     };
 
     if (loading) return <div className="p-10 text-center text-xs text-slate-400 bg-blue-50/50 rounded-3xl">分析中...⌛</div>;
-    // データがない場合はダッシュボード自体を表示しない
     if (stats.length === 0) return null;
 
     return (
@@ -79,14 +75,12 @@ export default function StatsComponent({ userId }: { userId: string }) {
                     <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">STATUS</span>
                 </h3>
                 <div className="h-60 sm:h-72 w-full">
+                    {/* ★警告を消す魔法 minWidth={1} minHeight={1} をセット済み！ */}
                     <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                         <BarChart data={stats} layout="vertical" margin={{ left: -10, right: 10, top: 0, bottom: 0 }}>
-                            {/* X軸（％）の目盛りを0, 50, 100に */}
                             <XAxis type="number" domain={[0, 100]} fontSize={10} tickLine={false} axisLine={false} stroke="#cbd5e1" ticks={[0, 50, 100]} unit="%" />
-                            {/* Y軸（科目名）の表示を綺麗に */}
                             <YAxis dataKey="subject" type="category" fontSize={11} width={100} tickLine={false} axisLine={false} stroke="#64748b" interval={0} />
                             <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                            {/* バーを角丸にして、色を正答率に応じて変更 */}
                             <Bar dataKey="accuracy" radius={[0, 12, 12, 0]} barSize={16}>
                                 {stats.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.accuracy >= 70 ? '#10b981' : '#3b82f6'} />
@@ -104,14 +98,13 @@ export default function StatsComponent({ userId }: { userId: string }) {
                     <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">ACTIVITY</span>
                 </h3>
                 <div className="h-48 sm:h-56 w-full">
+                    {/* ★ここにも魔法をセット済み！ */}
                     <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                         <LineChart data={dailyData} margin={{ left: -10, right: 10, top: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            {/* X軸の日付・曜日表示を綺麗に */}
                             <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} stroke="#cbd5e1" />
                             <YAxis fontSize={10} tickLine={false} axisLine={false} stroke="#cbd5e1" width={30} />
                             <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                            {/* 線と点のデザインを洗練 */}
                             <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5, fill: '#ffffff', stroke: '#3b82f6', strokeWidth: 3 }} activeDot={{ r: 6, fill: '#3b82f6' }} />
                         </LineChart>
                     </ResponsiveContainer>
