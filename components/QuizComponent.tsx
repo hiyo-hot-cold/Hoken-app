@@ -273,6 +273,15 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
             </div>
 
             {renderContent()}
+            {/* 画面の一番下に追加 */}
+            <div className="max-w-md mx-auto py-8 text-center border-t border-slate-100 mt-4 mb-24">
+                <p className="text-[10px] font-bold text-slate-300 tracking-widest uppercase">
+                    © 2026 Yoshiki KOHINATA. All Rights Reserved.
+                </p>
+                <p className="text-[8px] font-medium text-slate-300 mt-1">
+                    Powered by Gemini 3 & Supabase
+                </p>
+            </div>
 
             <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-100 pb-safe z-50 overflow-hidden">
                 <div className="max-w-md mx-auto flex justify-around p-2 gap-2">
