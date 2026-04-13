@@ -300,7 +300,7 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
                                     <h4 className="font-bold text-slate-800 text-sm mb-1">2. 知的財産権およびコンテンツの保護（重要）</h4>
                                     <p>
                                         本アプリ内で提供される学習コンテンツ（問題文、独自の解説ロジック、UIデザイン等）に関する著作権は、すべて本アプリ開発者に帰属します。<br />
-                                        一般社団法人生命保険協会が著作権を有する公式テキスト等の無断転載は行っておりませんが、**本アプリの独自コンテンツに対するスクリーンショット撮影、OCR（光学文字認識）によるテキスト抽出、AIの学習データとしての利用、自動化プログラム（スクレイピング等）によるデータ収集、および無断複製・転載・頒布を固く禁じます。**
+                                        一般社団法人生命保険協会が著作権を有する公式テキスト等の無断転載は行っておりませんが、本アプリの独自コンテンツに対するスクリーンショット撮影、OCR（光学文字認識）によるテキスト抽出、AIの学習データとしての利用、自動化プログラム（スクレイピング等）によるデータ収集、および無断複製・転載・頒布を固く禁じます。
                                     </p>
                                 </section>
 
@@ -313,12 +313,12 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
                                 </section>
 
                                 <section>
-                                    <h4 className="font-bold text-slate-800 text-sm mb-1">3. 第三者へのデータ提供</h4>
+                                    <h4 className="font-bold text-slate-800 text-sm mb-1">4. 第三者へのデータ提供</h4>
                                     <p>ユーザーの同意なく、収集した個人情報を第三者に提供することはありません。ただし、インフラストラクチャサービス（Supabase等）の提供範囲において必要な処理が行われる場合があります。</p>
                                 </section>
 
                                 <section>
-                                    <h4 className="font-bold text-slate-800 text-sm mb-1">4. 免責事項</h4>
+                                    <h4 className="font-bold text-slate-800 text-sm mb-1">5. 免責事項</h4>
                                     <p>本アプリのコンテンツは正確性を期しておりますが、その内容や試験の合格を保証するものではありません。本アプリの利用により生じたいかなる結果・損害についても、開発者は責任を負いかねます。</p>
                                 </section>
                             </div>
