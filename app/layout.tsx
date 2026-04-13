@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "生保講座マスター",
-  description: "生命保険講座の対策・弱点克服アプリ",
+  title: "InsurMaster",
+  description: "保険実務と方mの知識を深める専門学習ツール",
 };
 
 export default function RootLayout({

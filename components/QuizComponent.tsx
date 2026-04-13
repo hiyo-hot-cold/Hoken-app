@@ -4,14 +4,14 @@ import { supabase } from "@/utils/supabase";
 import StatsComponent from "./StatsComponent";
 
 const subjectData = [
-    { name: "生命保険総論", image: "/icons/1_souron.png" },
-    { name: "生命保険計理", image: "/icons/2_keiri.png" },
-    { name: "危険選択", image: "/icons/3_kikensentaku.png" },
-    { name: "約款と法律", image: "/icons/4_yakkantohouritsu.png" },
-    { name: "生命保険会計", image: "/icons/5_kaikei.png" },
-    { name: "生命保険と営業", image: "/icons/6_eigyou.png" },
-    { name: "生命保険と税法", image: "/icons/7_zeihou.png" },
-    { name: "資産運用", image: "/icons/8_sisan-unnyou.png" }
+    { name: "生保の基礎理論と仕組み", image: "/icons/1_souron.png" },
+    { name: "保険数理・計理の基本", image: "/icons/2_keiri.png" },
+    { name: "診査と引受選択の知識", image: "/icons/3_kikensentaku.png" },
+    { name: "約款法務・関連法規", image: "/icons/4_yakkantohouritsu.png" },
+    { name: "保険会計の実務と決算", image: "/icons/5_kaikei.png" },
+    { name: "営業推進とコンプライアンス", image: "/icons/6_eigyou.png" },
+    { name: "生命保険に関わる税務知識", image: "/icons/7_zeihou.png" },
+    { name: "資産運用の基礎と実務", image: "/icons/8_sisan-unnyou.png" }
 ];
 
 const maskEmail = (email: string) => {
@@ -33,17 +33,12 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
     const [activeTab, setActiveTab] = useState<'dashboard' | 'quiz'>('quiz');
     const [lastSubject, setLastSubject] = useState<string | null>(null);
 
-    // ★ 1. まず関数を定義（順番が大事！）
+    // プライバシーポリシー用のステート
+    const [showPrivacy, setShowPrivacy] = useState(false);
+
     const refreshLastSubject = async () => {
-        // ★確認1: 関数が呼ばれたこと自体を知らせる
-        console.log("--- refreshLastSubject 開始 ---");
-
         try {
-            if (!userId) {
-                console.error("❌ エラー: userId が空です！これだとDBから取れません。");
-                return;
-            }
-
+            if (!userId) return;
             const { data, error } = await supabase
                 .from('user_answers')
                 .select(`id, created_at, questions ( subject )`)
@@ -51,33 +46,16 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
                 .order('created_at', { ascending: false })
                 .limit(1);
 
-            if (error) {
-                console.error("❌ Supabaseエラー:", error);
-                return;
-            }
-
-            if (data && data.length > 0) {
+            if (!error && data && data.length > 0) {
                 const item = data[0] as any;
                 const subjectName = Array.isArray(item.questions) ? item.questions[0]?.subject : item.questions?.subject;
-
-                // ★確認2: 取れた値をハッキリ出す
-                console.log("✅ DBから取れた最新の科目名:", subjectName);
-
-                if (subjectName) {
-                    setLastSubject(subjectName);
-                } else {
-                    console.warn("⚠️ 科目名が空っぽでした（リレーションの問題かも）");
-                }
-            } else {
-                console.log("ℹ️ まだ一度も解答データがないみたいだよ！");
+                if (subjectName) setLastSubject(subjectName);
             }
         } catch (err) {
-            console.error("❌ 想定外のクラッシュ:", err);
+            console.error(err);
         }
-        console.log("--- refreshLastSubject 終了 ---");
     };
 
-    // ★ 2. useEffect で呼び出す
     useEffect(() => {
         async function fetchData() {
             setLoading(true);
@@ -89,18 +67,16 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
         fetchData();
     }, [userId]);
 
-    // ★ 3. ソート処理
     const sortedSubjects = [...subjectData].sort((a, b) => {
         if (a.name === lastSubject) return -1;
         if (b.name === lastSubject) return 1;
         return 0;
     });
 
-    // --- 各種ハンドラー ---
     const handleSubjectSelect = async (sub: string) => {
         setIsQuizLoading(true);
         setSelectedSubject(sub);
-        await new Promise(resolve => setTimeout(resolve, 500)); // 0.5秒のタメ
+        await new Promise(resolve => setTimeout(resolve, 500));
         const filtered = questions.filter(q => q.subject === sub);
         const shuffled = [...filtered].sort(() => Math.random() - 0.5);
         setActiveQuestions(shuffled);
@@ -118,7 +94,7 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
         setScore(0);
         setSelectedAnswer(null);
         setShowResult(false);
-        refreshLastSubject(); // 戻った瞬間に並び替え！
+        refreshLastSubject();
     };
 
     const handleBackToMenu = () => {
@@ -148,7 +124,6 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
         }
     };
 
-    // --- 表示ロジック ---
     if (loading) return <div className="text-center p-20 mt-20 font-bold text-slate-400">Loading...</div>;
 
     const renderContent = () => {
@@ -180,7 +155,7 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
                 <div className="max-w-md mx-auto px-4 pt-6 pb-10">
                     <div className="mb-6 flex items-end justify-between px-1">
                         <div>
-                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] block mb-1">Select Subject</span>
+                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] block mb-1">InsurMaster</span>
                             <h2 className="text-xl font-extrabold text-slate-900">学習科目</h2>
                         </div>
                         <span className="text-[10px] font-bold text-slate-400 border border-slate-200 px-2 py-0.5 rounded-md italic">{subjectData.length} Items</span>
@@ -273,17 +248,26 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
             </div>
 
             {renderContent()}
-            {/* 画面の一番下に追加 */}
-            <div className="max-w-md mx-auto py-12 text-center border-t border-slate-100 mt-10">
-                <p className="text-[10px] font-bold text-slate-300 tracking-widest uppercase">
-                    © 2026 Yoshiki KOHINATA. All Rights Reserved.
-                </p>
-                <p className="text-[8px] font-medium text-slate-300 mt-1">
-                    Powered by Gemini 3 & Supabase
-                </p>
-            </div>
 
-            <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-100 pb-safe z-50 overflow-hidden">
+            {/* フッター領域にプライバシーポリシーのリンクを追加 */}
+            {!isQuizLoading && !selectedSubject && (
+                <div className="max-w-md mx-auto py-12 text-center border-t border-slate-100 mt-10 mb-8">
+                    <p className="text-[10px] font-bold text-slate-300 tracking-widest uppercase">
+                        © 2026 Hiyo. All Rights Reserved.
+                    </p>
+                    <div className="mt-3">
+                        <button
+                            onClick={() => setShowPrivacy(true)}
+                            className="text-[10px] font-bold text-blue-400 hover:text-blue-600 transition-colors underline underline-offset-2"
+                        >
+                            プライバシーポリシー
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 下部固定ナビゲーション */}
+            <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-100 pb-safe z-40 overflow-hidden">
                 <div className="max-w-md mx-auto flex justify-around p-2 gap-2">
                     <button onClick={() => setActiveTab('dashboard')} className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl transition-all duration-300 ${activeTab === 'dashboard' ? 'text-blue-700 bg-blue-50 shadow-inner font-black' : 'text-slate-400 font-bold'}`}>
                         <img src="/icons/9_analysis.png" alt="" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'dashboard' ? 'scale-110' : 'scale-100'}`} />
@@ -295,6 +279,50 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
                     </button>
                 </div>
             </div>
+
+            {/* プライバシーポリシーのモーダル (z-50で最前面に) */}
+            {showPrivacy && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowPrivacy(false)}>
+                    <div
+                        className="bg-white w-full max-w-sm max-h-[85vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-6 overflow-y-auto">
+                            <h3 className="font-black text-slate-900 text-xl mb-6 border-b pb-4">プライバシーポリシー</h3>
+
+                            <div className="space-y-5 text-xs text-slate-600 leading-relaxed">
+                                <section>
+                                    <h4 className="font-bold text-slate-800 text-sm mb-1">1. 情報の収集と利用</h4>
+                                    <p>本アプリ「InsurMaster」は、ユーザーの学習体験の向上とアカウント管理を目的として、認証情報（メールアドレス）および学習履歴（クイズのスコア、解答データ等）を収集・利用します。これらの情報は本アプリの機能提供にのみ使用されます。</p>
+                                </section>
+
+                                <section>
+                                    <h4 className="font-bold text-slate-800 text-sm mb-1">2. 知的財産権に関する声明</h4>
+                                    <p>本アプリ内で提供される学習コンテンツは、開発者が独自に作成したものです。一般社団法人生命保険協会が著作権を有する「業界共通教育課程試験」等の公式テキストや過去問題の無断転載、複製、配布は一切行っておりません。<br /><br />本アプリは個人の業界知識の習得を目的とした独立した教育ツールであり、同協会とは一切関係ありません。</p>
+                                </section>
+
+                                <section>
+                                    <h4 className="font-bold text-slate-800 text-sm mb-1">3. 第三者へのデータ提供</h4>
+                                    <p>ユーザーの同意なく、収集した個人情報を第三者に提供することはありません。ただし、インフラストラクチャサービス（Supabase等）の提供範囲において必要な処理が行われる場合があります。</p>
+                                </section>
+
+                                <section>
+                                    <h4 className="font-bold text-slate-800 text-sm mb-1">4. 免責事項</h4>
+                                    <p>本アプリのコンテンツは正確性を期しておりますが、その内容や試験の合格を保証するものではありません。本アプリの利用により生じたいかなる結果・損害についても、開発者は責任を負いかねます。</p>
+                                </section>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t bg-slate-50">
+                            <button
+                                onClick={() => setShowPrivacy(false)}
+                                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-black text-sm transition-colors active:scale-95"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
