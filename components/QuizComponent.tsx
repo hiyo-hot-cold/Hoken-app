@@ -221,15 +221,16 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
         if (!selectedSubject) {
             return (
                 <div className="max-w-md mx-auto px-4 pt-6 pb-10">
-                    <div className="mb-6 flex items-end justify-between px-1">
+                    <div className="mb-5 flex items-end justify-between px-1">
                         <div>
-                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] block mb-1">InsurMaster</span>
+                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] block mb-0.5">InsurMaster</span>
                             <h2 className="text-xl font-extrabold text-slate-900">学習科目</h2>
                         </div>
                         <span className="text-[10px] font-bold text-slate-400 border border-slate-200 px-2 py-0.5 rounded-md italic">{subjectData.length} Items</span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3">
+                    {/* gap-3 を gap-2 に縮小 */}
+                    <div className="grid grid-cols-1 gap-2">
                         {sortedSubjects.map((sub) => {
                             const qCount = questions.filter(q => q.subject === sub.name).length;
                             const isRecent = sub.name === lastSubject;
@@ -238,22 +239,28 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
                                     key={sub.name}
                                     onClick={() => handleSubjectSelect(sub.name)}
                                     disabled={qCount === 0}
-                                    className={`group w-full text-left p-4 rounded-2xl border transition-all active:scale-[0.98] flex items-center gap-4 ${isRecent
-                                        ? 'bg-white border-blue-400 shadow-blue-100 shadow-xl'
-                                        : 'bg-white border-white shadow-lg shadow-slate-200/50 hover:border-blue-100'
-                                        } ${qCount === 0 ? 'opacity-50' : ''}`}
+                                    // p-4 -> p-3, gap-4 -> gap-3 へ縮小して密度アップ
+                                    className={`group w-full text-left p-3 rounded-2xl border transition-all active:scale-[0.98] flex items-center gap-3 ${isRecent
+                                        ? 'bg-white border-blue-400 shadow-md shadow-blue-100'
+                                        : 'bg-white border-white shadow-sm shadow-slate-200/50 hover:border-blue-100'
+                                        } ${qCount === 0 ? 'opacity-60 bg-slate-50' : ''}`}
                                 >
-                                    <div className="w-14 h-14 flex-shrink-0 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 select-none pointer-events-none">
+                                    {/* アイコンサイズを w-14 -> w-11 へ縮小 */}
+                                    <div className="w-11 h-11 flex-shrink-0 bg-white rounded-lg overflow-hidden border border-slate-100 select-none pointer-events-none">
                                         <img src={sub.image} alt="" draggable="false" className="w-full h-full object-cover" onContextMenu={(e) => e.preventDefault()} />
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="font-bold text-slate-900 block text-base group-hover:text-blue-600 transition-colors">{sub.name}</span>
+                                            {/* 文字サイズを調整（text-base -> text-[15px]）してスッキリと */}
+                                            <span className="font-bold text-slate-900 block text-[15px] leading-tight group-hover:text-blue-600 transition-colors">{sub.name}</span>
                                             {isRecent && <span className="text-[8px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded-sm animate-pulse">RECENT</span>}
                                         </div>
-                                        <span className="text-[10px] font-bold text-slate-400">{qCount}問収録</span>
+                                        {/* 0問の時は「近日追加予定🔥」を表示 */}
+                                        <span className={`text-[10px] font-bold ${qCount === 0 ? 'text-amber-500' : 'text-slate-400'}`}>
+                                            {qCount > 0 ? `${qCount}問収録` : '近日追加予定🔥'}
+                                        </span>
                                     </div>
-                                    <span className={`transition-all text-xl ${isRecent ? 'text-blue-500' : 'text-slate-200 group-hover:text-blue-500'}`}>→</span>
+                                    <span className={`transition-all text-lg ${isRecent ? 'text-blue-500' : 'text-slate-200 group-hover:text-blue-500'}`}>→</span>
                                 </button>
                             );
                         })}
