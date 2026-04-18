@@ -4,13 +4,13 @@ import { supabase } from "@/utils/supabase";
 import StatsComponent from "./StatsComponent";
 
 const subjectData = [
-    { name: "生保の基礎理論と仕組み", image: "/icons/1_souron.png" },
+    { name: "生命保険の概論", image: "/icons/1_souron.png" },
     { name: "保険数理・計理の基本", image: "/icons/2_keiri.png" },
     { name: "診査と引受選択の知識", image: "/icons/3_kikensentaku.png" },
     { name: "約款法務・関連法規", image: "/icons/4_yakkantohouritsu.png" },
     { name: "保険会計の実務と決算", image: "/icons/5_kaikei.png" },
-    { name: "営業推進とコンプライアンス", image: "/icons/6_eigyou.png" },
-    { name: "生命保険に関わる税務知識", image: "/icons/7_zeihou.png" },
+    { name: "保険募集・販売戦略", image: "/icons/6_eigyou.png" },
+    { name: "生保に関わる税務知識", image: "/icons/7_zeihou.png" },
     { name: "資産運用の基礎と実務", image: "/icons/8_sisan-unnyou.png" }
 ];
 
