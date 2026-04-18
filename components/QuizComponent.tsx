@@ -32,6 +32,10 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [activeTab, setActiveTab] = useState<'dashboard' | 'quiz'>('quiz');
     const [lastSubject, setLastSubject] = useState<string | null>(null);
+    // 既存のStateに追加
+    const [isSelectingCount, setIsSelectingCount] = useState(false); // 問題数選択画面の表示フラグ
+    const [tempFilteredQuestions, setTempFilteredQuestions] = useState<any[]>([]); // 選択科目の全問題を一時保存// 既存のStateに追加
+    const [isReviewLoading, setIsReviewLoading] = useState(false); // 復習モードのロード状態
 
     // プライバシーポリシー用のステート
     const [showPrivacy, setShowPrivacy] = useState(false);
@@ -73,28 +77,92 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
         return 0;
     });
 
-    const handleSubjectSelect = async (sub: string) => {
-        setIsQuizLoading(true);
-        setSelectedSubject(sub);
-        await new Promise(resolve => setTimeout(resolve, 500));
+    const handleSubjectSelect = (sub: string) => {
         const filtered = questions.filter(q => q.subject === sub);
-        const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+        if (filtered.length === 0) return; // 0問なら何もしない
+
+        setSelectedSubject(sub);
+        setTempFilteredQuestions(filtered);
+        setIsSelectingCount(true); // 問題数選択ステップへ進む
+    };
+
+    // 実際にクイズを開始する関数
+    const startQuiz = (count: number) => {
+        setIsSelectingCount(false);
+        setIsQuizLoading(true);
+
+        // 指定された数だけランダムに抽出
+        const shuffled = [...tempFilteredQuestions]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, count);
+
         setActiveQuestions(shuffled);
         setCurrent(0);
         setScore(0);
         setSelectedAnswer(null);
         setShowResult(false);
-        setIsQuizLoading(false);
+
+        setTimeout(() => setIsQuizLoading(false), 500);
+    };
+
+    // 弱点克服（復習）モードを開始する関数
+    const startReviewMode = async () => {
+        setIsReviewLoading(true);
+        try {
+            // Supabaseから現在のユーザーの「間違えた問題（is_correct が false）」を取得
+            const { data, error } = await supabase
+                .from('user_answers')
+                .select('question_id')
+                .eq('user_id', userId)
+                .eq('is_correct', false);
+
+            if (error) throw error;
+
+            // 間違えた問題のIDを抽出（重複を排除）
+            const mistakeIds = Array.from(new Set(data.map(d => d.question_id)));
+
+            // 現在選択中の科目の問題から、間違えた問題だけをフィルタリング
+            const reviewQuestions = tempFilteredQuestions.filter(q => mistakeIds.includes(q.id));
+
+            if (reviewQuestions.length === 0) {
+                alert('素晴らしい！この科目に間違えた問題はありません🎉');
+                setIsReviewLoading(false);
+                return;
+            }
+
+            // 準備ができたらクイズ画面へ遷移
+            setIsSelectingCount(false);
+            setIsQuizLoading(true);
+
+            // シャッフルしてセット（復習モードは該当する全問を出題）
+            const shuffled = [...reviewQuestions].sort(() => Math.random() - 0.5);
+            setActiveQuestions(shuffled);
+            setCurrent(0);
+            setScore(0);
+            setSelectedAnswer(null);
+            setShowResult(false);
+
+            setTimeout(() => setIsQuizLoading(false), 500);
+
+        } catch (err) {
+            console.error("復習データの取得エラー:", err);
+            alert('データの取得に失敗しました。');
+        } finally {
+            setIsReviewLoading(false);
+        }
     };
 
     const resetQuizState = () => {
         setSelectedSubject(null);
+        setIsSelectingCount(false);      // ← 追加
+        setTempFilteredQuestions([]);    // ← 追加
         setActiveQuestions([]);
         setCurrent(0);
         setScore(0);
         setSelectedAnswer(null);
         setShowResult(false);
         refreshLastSubject();
+        setIsReviewLoading(false);
     };
 
     const handleBackToMenu = () => {
@@ -193,7 +261,79 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
                 </div>
             );
         }
+        if (isSelectingCount) {
+            const options = [10, 20, 50, 100];
+            const totalAvailable = tempFilteredQuestions.length;
 
+            return (
+                <div className="max-w-md mx-auto px-6 pt-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <div className="mb-8 text-center">
+                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] block mb-2">Select Range</span>
+                        <h2 className="text-2xl font-black text-slate-900">{selectedSubject}</h2>
+                        <p className="text-[11px] font-bold text-slate-400 mt-2">挑戦する問題数を選択してください</p>
+                    </div>
+
+                    {/* 通常の問題数選択（4つのボタン） */}
+                    <div className="grid grid-cols-2 gap-4">
+                        {options.map((num) => {
+                            const isDisabled = totalAvailable < num; // ★収録数が足りない場合は true
+                            return (
+                                <button
+                                    key={num}
+                                    onClick={() => startQuiz(num)}
+                                    disabled={isDisabled}
+                                    className={`bg-white border-2 border-slate-50 p-6 rounded-[28px] shadow-xl shadow-slate-200/40 transition-all text-center group
+                                        ${isDisabled
+                                            ? 'opacity-40 grayscale cursor-not-allowed' // 無効時のスタイル
+                                            : 'active:scale-95 hover:border-blue-400'   // 有効時のスタイル
+                                        }`}
+                                >
+                                    <span className="block text-3xl font-black text-slate-900 group-hover:text-blue-600 tracking-tighter">{num}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Questions</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* 区切り線 */}
+                    <div className="flex items-center gap-3 my-7 opacity-70">
+                        <div className="h-px bg-slate-200 flex-1"></div>
+                        <span className="text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase">Options</span>
+                        <div className="h-px bg-slate-200 flex-1"></div>
+                    </div>
+
+                    {/* 特別なモードのボタンエリア */}
+                    <div className="space-y-3">
+                        {/* 復習モードボタン */}
+                        <button
+                            onClick={startReviewMode}
+                            disabled={isReviewLoading}
+                            className={`w-full bg-amber-50 border border-amber-200 p-4.5 rounded-[24px] text-amber-700 font-black text-sm transition-all flex items-center justify-center gap-2 shadow-sm py-4
+                                ${isReviewLoading ? 'opacity-70 animate-pulse' : 'active:scale-95 hover:bg-amber-100'}`}
+                        >
+                            <span className="text-lg">{isReviewLoading ? '⏳' : '💡'}</span>
+                            {isReviewLoading ? 'データ取得中...' : '弱点克服（過去に間違えた問題）'}
+                        </button>
+
+                        {/* 全問挑戦ボタン */}
+                        <button
+                            onClick={() => startQuiz(totalAvailable)}
+                            disabled={totalAvailable === 0}
+                            className="w-full bg-slate-900 p-4.5 rounded-[24px] text-white font-black text-sm active:scale-95 transition-all shadow-lg shadow-slate-300 py-4 disabled:opacity-40 disabled:active:scale-100"
+                        >
+                            すべての問題に挑戦 ({totalAvailable}問)
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={() => { setIsSelectingCount(false); setSelectedSubject(null); }}
+                        className="w-full mt-10 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:text-slate-600"
+                    >
+                        ← BACK TO SUBJECTS
+                    </button>
+                </div>
+            );
+        }
         const currentQuestion = activeQuestions[current];
         const isAnswered = selectedAnswer !== null;
 
