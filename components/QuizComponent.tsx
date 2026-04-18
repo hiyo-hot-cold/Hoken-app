@@ -438,14 +438,19 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
             {/* 下部固定ナビゲーション */}
             <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-100 pb-safe z-40 overflow-hidden">
                 <div className="max-w-md mx-auto flex justify-around p-2 gap-2">
-                    <button onClick={() => setActiveTab('dashboard')} className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl transition-all duration-300 ${activeTab === 'dashboard' ? 'text-blue-700 bg-blue-50 shadow-inner font-black' : 'text-slate-400 font-bold'}`}>
-                        <img src="/icons/9_analysis.png" alt="" draggable="false" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'dashboard' ? 'scale-110' : 'scale-100'}`} />
-                        <span className="text-[10px] tracking-tight">ANALYSIS</span>
-                    </button>
+
+                    {/* ① TRAINING を左に */}
                     <button onClick={() => setActiveTab('quiz')} className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl transition-all duration-300 ${activeTab === 'quiz' ? 'text-blue-700 bg-blue-50 shadow-inner font-black' : 'text-slate-400 font-bold'}`}>
                         <img src="/icons/10_training.png" alt="" draggable="false" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'quiz' ? 'scale-110' : 'scale-100'}`} />
                         <span className="text-[10px] tracking-tight">TRAINING</span>
                     </button>
+
+                    {/* ② ANALYSIS を右に */}
+                    <button onClick={() => setActiveTab('dashboard')} className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl transition-all duration-300 ${activeTab === 'dashboard' ? 'text-blue-700 bg-blue-50 shadow-inner font-black' : 'text-slate-400 font-bold'}`}>
+                        <img src="/icons/9_analysis.png" alt="" draggable="false" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'dashboard' ? 'scale-110' : 'scale-100'}`} />
+                        <span className="text-[10px] tracking-tight">ANALYSIS</span>
+                    </button>
+
                 </div>
             </div>
 
