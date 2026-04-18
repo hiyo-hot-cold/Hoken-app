@@ -176,7 +176,7 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
                                         } ${qCount === 0 ? 'opacity-50' : ''}`}
                                 >
                                     <div className="w-14 h-14 flex-shrink-0 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 select-none pointer-events-none">
-                                        <img src={sub.image} alt="" className="w-full h-full object-cover" onContextMenu={(e) => e.preventDefault()} />
+                                        <img src={sub.image} alt="" draggable="false" className="w-full h-full object-cover" onContextMenu={(e) => e.preventDefault()} />
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-0.5">
@@ -237,7 +237,29 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 relative pb-24">
+        <div
+            className="min-h-screen bg-slate-50 relative pb-24"
+            // 右クリック＆スマホ長押しメニュー禁止
+            onContextMenu={(e) => e.preventDefault()}
+            // コピー・カット禁止
+            onCopy={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
+            // 念のため貼り付けも禁止するなら（任意）
+            onPaste={(e) => e.preventDefault()}
+            style={{
+                // --- テキスト選択を徹底的に無効化 ---
+                WebkitUserSelect: 'none',
+                MozUserSelect: 'none',
+                msUserSelect: 'none',
+                userSelect: 'none',
+
+                // --- スマホ特有の挙動を制限 ---
+                // iOS/Androidで長押しした時のポップアップメニューを禁止
+                WebkitTouchCallout: 'none',
+                // タップした時のハイライト（青い枠とか）を消してアプリ感を出す
+                WebkitTapHighlightColor: 'transparent',
+            }}
+        >
             <div className="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40">
                 <div className="max-w-md mx-auto px-5 py-3 flex items-center justify-between">
                     <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
@@ -270,11 +292,11 @@ export default function QuizComponent({ userId, userEmail }: { userId: string, u
             <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-100 pb-safe z-40 overflow-hidden">
                 <div className="max-w-md mx-auto flex justify-around p-2 gap-2">
                     <button onClick={() => setActiveTab('dashboard')} className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl transition-all duration-300 ${activeTab === 'dashboard' ? 'text-blue-700 bg-blue-50 shadow-inner font-black' : 'text-slate-400 font-bold'}`}>
-                        <img src="/icons/9_analysis.png" alt="" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'dashboard' ? 'scale-110' : 'scale-100'}`} />
+                        <img src="/icons/9_analysis.png" alt="" draggable="false" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'dashboard' ? 'scale-110' : 'scale-100'}`} />
                         <span className="text-[10px] tracking-tight">ANALYSIS</span>
                     </button>
                     <button onClick={() => setActiveTab('quiz')} className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl transition-all duration-300 ${activeTab === 'quiz' ? 'text-blue-700 bg-blue-50 shadow-inner font-black' : 'text-slate-400 font-bold'}`}>
-                        <img src="/icons/10_training.png" alt="" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'quiz' ? 'scale-110' : 'scale-100'}`} />
+                        <img src="/icons/10_training.png" alt="" draggable="false" className={`w-6 h-6 object-contain transition-transform duration-300 ${activeTab === 'quiz' ? 'scale-110' : 'scale-100'}`} />
                         <span className="text-[10px] tracking-tight">TRAINING</span>
                     </button>
                 </div>
